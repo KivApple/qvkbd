@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/layouts">
+        <file>KeyItem.qml</file>
+        <file>standard.qml</file>
+    </qresource>
+</RCC>
