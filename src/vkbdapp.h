@@ -70,6 +70,8 @@ private slots:
 	void toggleActionTriggered();
 	void quitActionTriggered();
 	void aboutActionTriggered();
+	void transparentBackgroundToggled(bool state);
+	void blurBackgroundToggled(bool state);
 
 private:
 	enum class CheckSingletonAction {
@@ -85,6 +87,8 @@ private:
 	QAction m_quitAction;
 	QAction m_toggleAction;
 	QAction m_aboutAction;
+	QAction m_transparentBackgroundAction;
+	QAction m_blurBackgroundAction;
 	QSettings m_settings;
 	QSystemSemaphore m_singletonSemaphore;
 	QSharedMemory m_singletonMemory;

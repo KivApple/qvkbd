@@ -35,6 +35,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xproto.h>
 #include <X11/XKBlib.h>
+#include <X11/Xatom.h>
 #include "keysym2ucs.h"
 
 KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget(this) {
@@ -42,6 +43,7 @@ KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget
 	setFocusPolicy(Qt::NoFocus);
 	setAttribute(Qt::WA_ShowWithoutActivating);
 	setWindowFlags(Qt::WindowStaysOnTopHint | Qt::ToolTip | Qt::FramelessWindowHint);
+	setAttribute(Qt::WA_TranslucentBackground);
 	QGridLayout *layout = new QGridLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->addWidget(&m_quickWidget);
@@ -250,6 +252,10 @@ void KeyboardWidget::desktopResized() {
 
 void KeyboardWidget::loadSettings() {
 	QSettings& settings = VKbdApp::instance()->settings();
+	setTransparentBackground(
+			settings.value("transparentBackground", QVariant(true)).toBool(),
+			settings.value("blurBackground", QVariant(true)).toBool()
+	);
 	QVariant sizesVariant = settings.value("widgetSizes");
 	if (sizesVariant.isNull()) return;
 	QVariantList sizes = sizesVariant.toList();
@@ -266,6 +272,8 @@ void KeyboardWidget::loadSettings() {
 
 void KeyboardWidget::storeSettings() {
 	QSettings& settings = VKbdApp::instance()->settings();
+	settings.setValue("transparentBackground", QVariant(m_transparentBackground));
+	settings.setValue("blurBackground", QVariant(m_blurBackground));
 	QVariantList sizes;
 	for (auto it = m_widgetSizes.begin(); it != m_widgetSizes.end(); ++it) {
 		QStringList data;
@@ -285,6 +293,19 @@ void KeyboardWidget::setVisible(bool visible) {
 void KeyboardWidget::hideHideButton() {
 	m_hideHideButton = true;
 	updateLayout();
+}
+
+void KeyboardWidget::setTransparentBackground(bool transparent, bool blur) {
+	m_transparentBackground = transparent;
+	m_blurBackground = blur;
+	Atom net_wm_blur_region = XInternAtom(QX11Info::display(), "_KDE_NET_WM_BLUR_BEHIND_REGION", False);
+	if (transparent && blur) {
+		XChangeProperty(QX11Info::display(), winId(), net_wm_blur_region, XA_CARDINAL, 32, PropModeReplace, 0, 0);
+	} else {
+		XDeleteProperty(QX11Info::display(), winId(), net_wm_blur_region);
+	}
+	m_quickWidget.setClearColor(transparent ? Qt::transparent : Qt::white);
+	repaint();
 }
 
 static bool operator<(const QSize& first, const QSize& second) {

@@ -22,6 +22,7 @@ import "keys"
 Rectangle {
     width: childrenRect.width + 20
     height: childrenRect.height + 20
+    color: "#00000000"
     border.width: 2
 
     Column {

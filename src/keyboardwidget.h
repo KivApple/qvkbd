@@ -34,6 +34,9 @@ public:
 	void storeSettings();
 	void setVisible(bool visible) override;
 	void hideHideButton();
+	void setTransparentBackground(bool transparent, bool blur);
+	bool transparentBackground() { return m_transparentBackground; }
+	bool blurBackground() { return m_blurBackground; }
 
 signals:
 	void visibilityChanged();
@@ -64,6 +67,8 @@ private:
 	X11EventListener m_eventListener;
 	QMap<QSize, QRect> m_widgetSizes;
 	bool m_hideHideButton = false;
+	bool m_transparentBackground;
+	bool m_blurBackground;
 
 	void loadKeyLayout(const QString& name);
 	void updateLayout();

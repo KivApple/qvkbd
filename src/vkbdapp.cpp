@@ -37,6 +37,10 @@ VKbdApp::VKbdApp(int &argc, char *argv[]): QApplication(argc, argv),
 	m_quitAction.setText(tr("Quit"));
 	m_toggleAction.setText(tr("Toggle visible"));
 	m_aboutAction.setText(tr("About..."));
+	m_transparentBackgroundAction.setText(tr("Transparent background"));
+	m_transparentBackgroundAction.setCheckable(true);
+	m_blurBackgroundAction.setText(tr("Blur background"));
+	m_blurBackgroundAction.setCheckable(true);
 	connect(&m_trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
 	connect(&m_quitAction, SIGNAL(triggered(bool)), this, SLOT(quitActionTriggered()));
@@ -45,10 +49,18 @@ VKbdApp::VKbdApp(int &argc, char *argv[]): QApplication(argc, argv),
 	m_trayIconMenu.addAction(&m_toggleAction);
 	m_trayIconMenu.addAction(&m_aboutAction);
 	m_trayIconMenu.addSeparator();
+	m_trayIconMenu.addAction(&m_transparentBackgroundAction);
+	m_trayIconMenu.addAction(&m_blurBackgroundAction);
+	m_trayIconMenu.addSeparator();
 	m_trayIconMenu.addAction(&m_quitAction);
 	m_trayIcon.setContextMenu(&m_trayIconMenu);
 	m_trayIcon.show();
 	m_keyboardWidget.loadSettings();
+	m_transparentBackgroundAction.setChecked(m_keyboardWidget.transparentBackground());
+	m_blurBackgroundAction.setChecked(m_keyboardWidget.blurBackground());
+	m_blurBackgroundAction.setEnabled(m_keyboardWidget.transparentBackground());
+	connect(&m_transparentBackgroundAction, SIGNAL(toggled(bool)), this, SLOT(transparentBackgroundToggled(bool)));
+	connect(&m_blurBackgroundAction, SIGNAL(toggled(bool)), this, SLOT(blurBackgroundToggled(bool)));
 	QCommandLineParser parser;
 	parser.setApplicationDescription("Qt Virtual Keyboard");
 	parser.addHelpOption();
@@ -101,6 +113,15 @@ void VKbdApp::toggleActionTriggered() {
 void VKbdApp::aboutActionTriggered() {
 	AboutDialog dialog;
 	dialog.exec();
+}
+
+void VKbdApp::transparentBackgroundToggled(bool state) {
+	m_keyboardWidget.setTransparentBackground(state, m_blurBackgroundAction.isChecked());
+	m_blurBackgroundAction.setEnabled(state);
+}
+
+void VKbdApp::blurBackgroundToggled(bool state) {
+	m_keyboardWidget.setTransparentBackground(m_transparentBackgroundAction.isChecked(), state);
 }
 
 void VKbdApp::checkSingleton(CheckSingletonAction action) {
