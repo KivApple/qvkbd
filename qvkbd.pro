@@ -30,14 +30,25 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += src/main.cpp \
     src/keyboardwidget.cpp \
     src/keysym2ucs.c \
-    src/x11eventlistener.cpp
+    src/x11eventlistener.cpp \
+    src/vkbdapp.cpp \
+    src/aboutdialog.cpp
 
 HEADERS  += \
     src/keyboardwidget.h \
     src/keysym2ucs.h \
-    src/x11eventlistener.h
+    src/x11eventlistener.h \
+    src/vkbdapp.h \
+    src/aboutdialog.h
 
-FORMS    +=
+FORMS    += \
+    src/aboutdialog.ui
 
 RESOURCES += \
-    src/resources.qrc
+	resources.qrc
+
+DBUS_ADAPTORS += \
+	src/xyz.etse.QVKbd.xml
+
+DBUS_INTERFACES += \
+	src/xyz.etse.QVKbd.xml

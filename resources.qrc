@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/layouts">
+        <file alias="standard.qml">layouts/standard.qml</file>
+        <file alias="keys/IconKeyItem.qml">layouts/keys/IconKeyItem.qml</file>
+        <file alias="keys/KeyItem.qml">layouts/keys/KeyItem.qml</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file alias="keyboard.svg">icons/keyboard.svg</file>
+        <file alias="grid-world.svg">icons/grid-world.svg</file>
+        <file alias="keyboard.svg.png">icons/keyboard.svg.png</file>
+    </qresource>
+</RCC>

@@ -1,6 +1,6 @@
 /*
  * This file is part of the qvkbd project.
- * Copyright (C) 2016 <kiv.apple@gmail.com>
+ * Copyright (C) 2016 Ivan Kolesnikov <kiv.apple@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,10 @@
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QGridLayout>
+#include <QDesktopWidget>
 
 #include "keyboardwidget.h"
+#include "vkbdapp.h"
 
 #include <X11/extensions/XTest.h>
 #include <X11/Xlocale.h>
@@ -36,6 +38,7 @@
 #include "keysym2ucs.h"
 
 KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget(this) {
+	setWindowIcon(QIcon(":/icons/keyboard.svg"));
 	setFocusPolicy(Qt::NoFocus);
 	setAttribute(Qt::WA_ShowWithoutActivating);
 	setWindowFlags(Qt::WindowStaysOnTopHint | Qt::ToolTip | Qt::FramelessWindowHint);
@@ -46,6 +49,8 @@ KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget
 	layoutListChanged();
 	layoutChanged();
 	loadKeyLayout("qrc:/layouts/standard.qml");
+	m_quickWidget.setStyleSheet("KeyItem { color: yellow; }");
+	connect(QApplication::desktop(), SIGNAL(resized(int)), this, SLOT(desktopResized()));
 }
 
 KeyboardWidget::~KeyboardWidget() {
@@ -74,6 +79,10 @@ void KeyboardWidget::updateLayout(QQuickItem *item) {
 	QVariant labelVariant = item->property("label");
 	if (!labelVariant.isValid()) return;
 	int scanCode = scanCodeVariant.toInt();
+	if (m_hideHideButton && scanCode == -2) {
+		item->setVisible(false);
+		return;
+	}
 	m_buttons.insert(scanCode, item);
 	connect(item, SIGNAL(xPressed(int)), this, SLOT(buttonPressed(int)));
 	connect(item, SIGNAL(xReleased(int)), this, SLOT(buttonReleased(int)));
@@ -191,8 +200,11 @@ void KeyboardWidget::buttonReleased(int scanCode) {
 		}
 		XTestFakeKeyEvent(QX11Info::display(), scanCode, false, 0);
 	} else if (scanCode == -2) {
-		close();
-		QApplication::quit();
+		hide();
+	} else if (scanCode == -3) {
+		int nextLayout = (m_currentLayout + 1) % m_layouts.size();
+		QDBusInterface iface("org.kde.keyboard", "/Layouts", "org.kde.KeyboardLayouts", QDBusConnection::sessionBus());
+		iface.call("setLayout", m_layouts[nextLayout]);
 	}
 }
 
@@ -206,6 +218,7 @@ void KeyboardWidget::mousePressEvent(QMouseEvent *event) {
 void KeyboardWidget::mouseReleaseEvent(QMouseEvent *event) {
 	Q_UNUSED(event);
 	m_dragging = false;
+	m_widgetSizes.insert(QApplication::desktop()->size(), QRect(x(), y(), width(), height()));
 }
 
 void KeyboardWidget::mouseMoveEvent(QMouseEvent *event) {
@@ -214,4 +227,66 @@ void KeyboardWidget::mouseMoveEvent(QMouseEvent *event) {
 		m_clickPos = event->globalPos();
 		move(x() + delta.x(), y() + delta.y());
 	}
+}
+
+void KeyboardWidget::desktopResized() {
+	QSize desktopSize = QApplication::desktop()->size();
+	auto it = m_widgetSizes.find(desktopSize);
+	if (it != m_widgetSizes.end()) {
+		move(it->x(), it->y());
+		resize(it->width(), it->height());
+		if ((x() + width()) > desktopSize.width()) {
+			move(desktopSize.width() - width(), y());
+		} else if (x() < 0) {
+			move(0, y());
+		}
+		if ((y() + height()) > desktopSize.height()) {
+			move(x(), desktopSize.height() - height());
+		} else if (y() < 0) {
+			move(x(), 0);
+		}
+	}
+}
+
+void KeyboardWidget::loadSettings() {
+	QSettings& settings = VKbdApp::instance()->settings();
+	QVariant sizesVariant = settings.value("widgetSizes");
+	if (sizesVariant.isNull()) return;
+	QVariantList sizes = sizesVariant.toList();
+	m_widgetSizes.clear();
+	for (auto it = sizes.begin(); it != sizes.end(); ++it) {
+		QStringList data = it->toStringList();
+		if (data.size() < 6) continue;
+		QSize desktopSize(data[0].toInt(), data[1].toInt());
+		QRect rect(data[2].toInt(), data[3].toInt(), data[4].toInt(), data[5].toInt());
+		m_widgetSizes.insert(desktopSize, rect);
+	}
+	desktopResized();
+}
+
+void KeyboardWidget::storeSettings() {
+	QSettings& settings = VKbdApp::instance()->settings();
+	QVariantList sizes;
+	for (auto it = m_widgetSizes.begin(); it != m_widgetSizes.end(); ++it) {
+		QStringList data;
+		data << QString::number(it.key().width()) << QString::number(it.key().height());
+		data << QString::number(it.value().x()) << QString::number(it.value().y());
+		data << QString::number(it.value().width()) << QString::number(it.value().height());
+		sizes.append(QVariant(data));
+	}
+	settings.setValue("widgetSizes", QVariant(sizes));
+}
+
+void KeyboardWidget::setVisible(bool visible) {
+	QWidget::setVisible(visible);
+	emit visibilityChanged();
+}
+
+void KeyboardWidget::hideHideButton() {
+	m_hideHideButton = true;
+	updateLayout();
+}
+
+static bool operator<(const QSize& first, const QSize& second) {
+	return (first.width() * first.height()) < (second.width() * second.height());
 }

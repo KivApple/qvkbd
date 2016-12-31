@@ -1,8 +1,28 @@
+/*
+ * This file is part of the qvkbd project.
+ * Copyright (C) 2016 Ivan Kolesnikov <kiv.apple@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 import QtQuick 2.0
+import "keys"
 
-Item {
+Rectangle {
     width: childrenRect.width + 20
     height: childrenRect.height + 20
+    border.width: 2
 
     Column {
         id: column
@@ -22,6 +42,7 @@ Item {
                 id: keyItem
                 width: 40
                 height: 30
+                color: "#ffffff"
                 scanCode: 9
                 label: "Esc"
             }
@@ -181,6 +202,7 @@ Item {
                 x: 0
                 width: 40
                 height: 40
+                color: "#ffffff"
                 scanCode: 10
             }
 
@@ -662,7 +684,7 @@ Item {
             KeyItem {
                 id: keyItem70
                 x: 0
-                width: 308
+                width: 264
                 height: 40
                 scanCode: 65
                 label: " "
@@ -676,6 +698,17 @@ Item {
                 modifier: true
                 scanCode: 108
                 label: "Alt Gr"
+            }
+
+            IconKeyItem {
+                id: keyItem74
+                x: 0
+                width: 40
+                height: 40
+                icon: "qrc:///icons/grid-world.svg"
+                label: " "
+                scanCode: -3
+                modifier: false
             }
 
             KeyItem {
@@ -697,6 +730,7 @@ Item {
                 scanCode: 105
                 label: "Ctrl"
             }
+
         }
 
     }

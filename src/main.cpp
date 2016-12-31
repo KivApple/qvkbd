@@ -1,6 +1,6 @@
 /*
  * This file is part of the qvkbd project.
- * Copyright (C) 2016 <kiv.apple@gmail.com>
+ * Copyright (C) 2016 Ivan Kolesnikov <kiv.apple@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include <QApplication>
-#include "keyboardwidget.h"
+#include "vkbdapp.h"
 
 int main(int argc, char *argv[]) {
-	QApplication a(argc, argv);
-	KeyboardWidget mainWidget;
-	mainWidget.show();
-	return a.exec();
+	VKbdApp app(argc, argv);
+	return app.exec();
 }

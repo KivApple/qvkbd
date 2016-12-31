@@ -1,6 +1,6 @@
 /*
  * This file is part of the qvkbd project.
- * Copyright (C) 2016 <kiv.apple@gmail.com>
+ * Copyright (C) 2016 Ivan Kolesnikov <kiv.apple@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #include <QWidget>
 #include <QQuickWidget>
 #include <QQuickItem>
-#include <QAbstractNativeEventFilter>
 #include "x11eventlistener.h"
 
 class KeyboardWidget : public QWidget
@@ -30,9 +29,14 @@ class KeyboardWidget : public QWidget
 	Q_OBJECT
 public:
 	explicit KeyboardWidget(QWidget *parent = 0);
-	~KeyboardWidget();
+	~KeyboardWidget() override;
+	void loadSettings();
+	void storeSettings();
+	void setVisible(bool visible) override;
+	void hideHideButton();
 
 signals:
+	void visibilityChanged();
 
 private slots:
 	void layoutChanged();
@@ -40,6 +44,7 @@ private slots:
 	void buttonPressed(int scanCode);
 	void buttonReleased(int scanCode);
 	void keyEventReceived(int scanCode, bool pressed);
+	void desktopResized();
 
 protected:
 	void mousePressEvent(QMouseEvent *event);
@@ -57,6 +62,8 @@ private:
 	QPoint m_clickPos;
 	bool m_dragging;
 	X11EventListener m_eventListener;
+	QMap<QSize, QRect> m_widgetSizes;
+	bool m_hideHideButton = false;
 
 	void loadKeyLayout(const QString& name);
 	void updateLayout();

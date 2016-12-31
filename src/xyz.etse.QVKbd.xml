@@ -1,0 +1,12 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/xyz/etse/QVKbd">
+	<interface name="xyz.etse.QVKbd">
+		<property name="visible" type="b" access="readwrite" />
+		<method name="toggleVisible" />
+		<method name="quit" />
+		<signal name="visibleChanged">
+			<arg type="b" />
+		</signal>
+	</interface>
+</node>
