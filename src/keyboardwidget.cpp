@@ -32,9 +32,6 @@ KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget
 	setAttribute(Qt::WA_ShowWithoutActivating);
 	setWindowFlags(Qt::WindowStaysOnTopHint | Qt::ToolTip | Qt::FramelessWindowHint);
 	setAttribute(Qt::WA_TranslucentBackground);
-	QGridLayout *layout = new QGridLayout(this);
-	layout->setContentsMargins(0, 0, 0, 0);
-	layout->addWidget(&m_quickWidget);
 	installEventHandlers();
 }
 
@@ -44,8 +41,9 @@ KeyboardWidget::~KeyboardWidget() {
 
 void KeyboardWidget::loadKeyLayout(const QString &name) {
 	m_quickWidget.setSource(name);
-	setMinimumWidth(m_quickWidget.rootObject()->width());
-	setMinimumHeight(m_quickWidget.rootObject()->height());
+	setMinimumWidth(m_quickWidget.rootObject()->width() / 2);
+	setMinimumHeight(m_quickWidget.rootObject()->height() / 2);
+	updateQuickWidgetSize();
 	updateLayout();
 }
 
@@ -168,7 +166,7 @@ void KeyboardWidget::mousePressEvent(QMouseEvent *event) {
 	m_clickPos = event->globalPos();
 	if ((event->button() == Qt::LeftButton) && !m_dragging && !m_resizing) {
 		QPoint invertedPos = QPoint(width(), height()) - event->pos();
-		if ((invertedPos.x() < 10) || (invertedPos.y() < 10)) {
+		if (invertedPos.x() < 10) {
 			m_resizing = true;
 			m_imaginarySize = size();
 		} else {
@@ -192,19 +190,17 @@ void KeyboardWidget::mouseMoveEvent(QMouseEvent *event) {
 	} else if (m_resizing) {
 		m_imaginarySize.setWidth(m_imaginarySize.width() + delta.x());
 		m_imaginarySize.setHeight(m_imaginarySize.height() + delta.y());
-		resize(m_imaginarySize.width(), m_imaginarySize.height());
+		if (m_imaginarySize.width() && m_quickWidget.rootObject()) {
+			resize(m_imaginarySize.width(),
+				   m_imaginarySize.width() * m_quickWidget.rootObject()->height() /
+				   m_quickWidget.rootObject()->width());
+		}
 	}
 }
 
 void KeyboardWidget::resizeEvent(QResizeEvent *event) {
 	QWidget::resizeEvent(event);
-	if (m_quickWidget.rootObject() == nullptr) return;
-	QSize baseSize(m_quickWidget.rootObject()->width(), m_quickWidget.rootObject()->height());
-	float scaleX = (float)m_quickWidget.width() / baseSize.width();
-	float scaleY = (float)m_quickWidget.height() / baseSize.height();
-	float scale = qMin(scaleX, scaleY);
-	m_quickWidget.rootObject()->setTransformOriginPoint(QPointF(0, 0));
-	m_quickWidget.rootObject()->setScale(scale);
+	updateQuickWidgetSize();
 }
 
 void KeyboardWidget::desktopResized() {
@@ -277,6 +273,22 @@ void KeyboardWidget::setTransparentBackground(bool transparent, bool blur) {
 	m_x11Support.enableBlurForWidgetBackground(this, transparent && blur);
 	m_quickWidget.setClearColor(transparent ? Qt::transparent : Qt::white);
 	repaint();
+}
+
+void KeyboardWidget::updateQuickWidgetSize() {
+	m_quickWidget.resize(contentsRect().size());
+	if (m_quickWidget.rootObject() == nullptr) return;
+	QSize baseSize(m_quickWidget.rootObject()->width(), m_quickWidget.rootObject()->height());
+	float scaleX = (float)m_quickWidget.width() / baseSize.width();
+	float scaleY = (float)m_quickWidget.height() / baseSize.height();
+	m_quickWidget.rootObject()->setProperty("scaleX", QVariant(scaleX));
+	m_quickWidget.rootObject()->setProperty("scaleY", QVariant(scaleY));
+}
+
+void KeyboardWidget::resetSize() {
+	if (m_quickWidget.rootObject() == nullptr) return;
+	resize(m_quickWidget.rootObject()->width(), m_quickWidget.rootObject()->height());
+	m_widgetSizes.insert(QApplication::desktop()->size(), QRect(x(), y(), width(), height()));
 }
 
 static bool operator<(const QSize& first, const QSize& second) {

@@ -72,6 +72,7 @@ private slots:
 	void aboutActionTriggered();
 	void transparentBackgroundToggled(bool state);
 	void blurBackgroundToggled(bool state);
+	void resetWidgetSize();
 
 private:
 	enum class CheckSingletonAction {
@@ -89,6 +90,7 @@ private:
 	QAction m_aboutAction;
 	QAction m_transparentBackgroundAction;
 	QAction m_blurBackgroundAction;
+	QAction m_resetSizeAction;
 	QSettings m_settings;
 	QSystemSemaphore m_singletonSemaphore;
 	QSharedMemory m_singletonMemory;

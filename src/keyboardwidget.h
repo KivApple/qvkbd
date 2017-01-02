@@ -37,6 +37,7 @@ public:
 	void setTransparentBackground(bool transparent, bool blur);
 	bool transparentBackground() { return m_transparentBackground; }
 	bool blurBackground() { return m_blurBackground; }
+	void resetSize();
 
 signals:
 	void visibilityChanged();
@@ -76,6 +77,7 @@ private:
 	void updateLayoutLabels();
 	void updateLayoutLabels(QQuickItem *item);
 	void installEventHandlers();
+	void updateQuickWidgetSize();
 
 };
 

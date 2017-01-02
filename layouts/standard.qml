@@ -935,4 +935,8 @@ Rectangle {
 
     }
 
+    property double scaleX: 1
+    property double scaleY: 1
+    transform: Scale { origin.x: 0; origin.y: 0; xScale: scaleX; yScale: scaleY }
+
 }

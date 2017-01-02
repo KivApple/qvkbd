@@ -40,17 +40,21 @@ VKbdApp::VKbdApp(int &argc, char *argv[]): QApplication(argc, argv),
 	m_transparentBackgroundAction.setText(tr("Transparent background"));
 	m_transparentBackgroundAction.setCheckable(true);
 	m_blurBackgroundAction.setText(tr("Blur background"));
+	m_resetSizeAction.setText(tr("Reset size"));
 	m_blurBackgroundAction.setCheckable(true);
 	connect(&m_trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
 	connect(&m_quitAction, SIGNAL(triggered(bool)), this, SLOT(quitActionTriggered()));
 	connect(&m_toggleAction, SIGNAL(triggered(bool)), this, SLOT(toggleActionTriggered()));
 	connect(&m_aboutAction, SIGNAL(triggered(bool)), this, SLOT(aboutActionTriggered()));
+	connect(&m_resetSizeAction, SIGNAL(triggered(bool)), this, SLOT(resetWidgetSize()));
 	m_trayIconMenu.addAction(&m_toggleAction);
 	m_trayIconMenu.addAction(&m_aboutAction);
 	m_trayIconMenu.addSeparator();
 	m_trayIconMenu.addAction(&m_transparentBackgroundAction);
 	m_trayIconMenu.addAction(&m_blurBackgroundAction);
+	m_trayIconMenu.addSeparator();
+	m_trayIconMenu.addAction(&m_resetSizeAction);
 	m_trayIconMenu.addSeparator();
 	m_trayIconMenu.addAction(&m_quitAction);
 	m_trayIcon.setContextMenu(&m_trayIconMenu);
@@ -122,6 +126,10 @@ void VKbdApp::transparentBackgroundToggled(bool state) {
 
 void VKbdApp::blurBackgroundToggled(bool state) {
 	m_keyboardWidget.setTransparentBackground(m_transparentBackgroundAction.isChecked(), state);
+}
+
+void VKbdApp::resetWidgetSize() {
+	m_keyboardWidget.resetSize();
 }
 
 void VKbdApp::checkSingleton(CheckSingletonAction action) {
