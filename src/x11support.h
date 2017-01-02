@@ -16,33 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef X11EVENTLISTENER_H
-#define X11EVENTLISTENER_H
+#ifndef X11SUPPORT_H
+#define X11SUPPORT_H
 
 #include <QThread>
-#include <QKeyEvent>
 
-struct X11EventListenerPrivateData;
+struct X11SupportPrivateData;
 
-class X11EventListener: public QThread {
+class X11Support: public QThread {
 	Q_OBJECT
 public:
-	explicit X11EventListener();
-	~X11EventListener() override;
+	explicit X11Support();
+	~X11Support() override;
+	void start();
 	void stop();
+
+	QString textForScanCode(int scanCode);
+	bool numLockActive();
+	bool capsLockActive();
+	void fakeKeyEvent(int scanCode, bool pressed);
+	void switchKeyboardLayout();
+	void enableBlurForWidgetBackground(QWidget *widget, bool enabled);
 
 signals:
 	void error(const char *message);
 	void keyEvent(int scanCode, bool pressed);
+	void keyboardLayoutChanged();
+	void indicatorsStateChanged();
 
 protected:
 	void run() override;
 
 private:
 	volatile bool m_running;
-	X11EventListenerPrivateData *m_privateData;
+	X11SupportPrivateData *m_privateData;
 	void handleCapturedEvent();
 
 };
 
-#endif // X11EVENTLISTENER_H
+#endif // X11SUPPORT_H

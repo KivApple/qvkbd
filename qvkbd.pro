@@ -30,16 +30,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += src/main.cpp \
     src/keyboardwidget.cpp \
     src/keysym2ucs.c \
-    src/x11eventlistener.cpp \
     src/vkbdapp.cpp \
-    src/aboutdialog.cpp
+    src/aboutdialog.cpp \
+    src/x11support.cpp
 
 HEADERS  += \
     src/keyboardwidget.h \
     src/keysym2ucs.h \
-    src/x11eventlistener.h \
     src/vkbdapp.h \
-    src/aboutdialog.h
+    src/aboutdialog.h \
+    src/x11support.h
 
 FORMS    += \
     src/aboutdialog.ui

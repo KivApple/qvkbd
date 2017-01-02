@@ -22,7 +22,7 @@
 #include <QWidget>
 #include <QQuickWidget>
 #include <QQuickItem>
-#include "x11eventlistener.h"
+#include "x11support.h"
 
 class KeyboardWidget : public QWidget
 {
@@ -43,28 +43,27 @@ signals:
 
 private slots:
 	void layoutChanged();
-	void layoutListChanged();
 	void buttonPressed(int scanCode);
 	void buttonReleased(int scanCode);
 	void keyEventReceived(int scanCode, bool pressed);
 	void desktopResized();
+	void eventListenerError(const char *message);
+	void indicatorsStateChanged();
 
 protected:
 	void mousePressEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
+	void resizeEvent(QResizeEvent *event);
 
 private:
 	QQuickWidget m_quickWidget;
-	QStringList m_layouts;
-	int m_currentLayout;
 	QMap<int, QQuickItem*> m_buttons;
-	bool m_capsState = false;
-	bool m_shiftState = false;
-	QSet<int> m_pressedButtons;
 	QPoint m_clickPos;
 	bool m_dragging;
-	X11EventListener m_eventListener;
+	bool m_resizing;
+	QSize m_imaginarySize;
+	X11Support m_x11Support;
 	QMap<QSize, QRect> m_widgetSizes;
 	bool m_hideHideButton = false;
 	bool m_transparentBackground;
@@ -76,7 +75,6 @@ private:
 	void updateLayoutLabels();
 	void updateLayoutLabels(QQuickItem *item);
 	void installEventHandlers();
-	QString textForScanCode(int scanCode);
 
 };
 

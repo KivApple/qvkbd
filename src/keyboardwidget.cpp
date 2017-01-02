@@ -17,26 +17,14 @@
  *
  */
 #include <QDebug>
-#include <QX11Info>
 #include <QApplication>
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
 #include <QGridLayout>
 #include <QDesktopWidget>
-
+#include <QQmlContext>
+#include <QQmlEngine>
+#include <QMessageBox>
 #include "keyboardwidget.h"
 #include "vkbdapp.h"
-
-#include <X11/extensions/XTest.h>
-#include <X11/Xlocale.h>
-#include <X11/Xos.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xproto.h>
-#include <X11/XKBlib.h>
-#include <X11/Xatom.h>
-#include "keysym2ucs.h"
 
 KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget(this) {
 	setWindowIcon(QIcon(":/icons/keyboard.svg"));
@@ -48,7 +36,6 @@ KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->addWidget(&m_quickWidget);
 	installEventHandlers();
-	layoutListChanged();
 	layoutChanged();
 	loadKeyLayout("qrc:/layouts/standard.qml");
 	m_quickWidget.setStyleSheet("KeyItem { color: yellow; }");
@@ -56,11 +43,13 @@ KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget
 }
 
 KeyboardWidget::~KeyboardWidget() {
-	m_eventListener.stop();
+	m_x11Support.stop();
 }
 
 void KeyboardWidget::loadKeyLayout(const QString &name) {
 	m_quickWidget.setSource(name);
+	setMinimumWidth(m_quickWidget.rootObject()->width());
+	setMinimumHeight(m_quickWidget.rootObject()->height());
 	updateLayout();
 }
 
@@ -94,6 +83,8 @@ void KeyboardWidget::updateLayout(QQuickItem *item) {
 }
 
 void KeyboardWidget::updateLayoutLabels() {
+	if (m_quickWidget.rootObject() == nullptr) return;
+	m_quickWidget.rootObject()->setProperty("numLockActive", m_x11Support.numLockActive());
 	updateLayoutLabels(m_quickWidget.rootObject());
 }
 
@@ -109,126 +100,108 @@ void KeyboardWidget::updateLayoutLabels(QQuickItem *item) {
 	if (!labelVariant.isValid()) return;
 	int scanCode = scanCodeVariant.toInt();
 	if (scanCode == 66) {
-		item->setProperty("checked", QVariant(m_capsState));
+		item->setProperty("checked", QVariant(m_x11Support.capsLockActive()));
+	} else if (scanCode == 77) {
+		item->setProperty("checked", QVariant(m_x11Support.numLockActive()));
 	}
 	if (!item->property("dynamicLabel").toBool()) return;
-	QString label = textForScanCode(scanCode);
+	QString label = m_x11Support.textForScanCode(scanCode);
 	item->setProperty("label", QVariant(label));\
 }
 
 void KeyboardWidget::layoutChanged() {
-	QDBusInterface iface("org.kde.keyboard", "/Layouts", "org.kde.KeyboardLayouts", QDBusConnection::sessionBus());
-	QDBusReply<QString> reply = iface.call("getCurrentLayout");
-	if (reply.isValid()) {
-		QString layout = reply.value();
-		m_currentLayout = m_layouts.indexOf(layout);
-		updateLayoutLabels();
-	}
+	updateLayoutLabels();
 }
 
-void KeyboardWidget::layoutListChanged() {
-	QDBusInterface iface("org.kde.keyboard", "/Layouts", "org.kde.KeyboardLayouts", QDBusConnection::sessionBus());
-	QDBusReply<QStringList> reply = iface.call("getLayoutsList");
-	if (reply.isValid()) {
-		m_layouts = reply.value();
-	}
+void KeyboardWidget::indicatorsStateChanged() {
+	updateLayoutLabels();
+}
+
+void KeyboardWidget::eventListenerError(const char *message) {
+	QMessageBox::critical(this, windowTitle(), message, QMessageBox::Ok, QMessageBox::Ok);
 }
 
 void KeyboardWidget::installEventHandlers() {
-	QString service = "";
-	QString path = "/Layouts";
-	QString interface = "org.kde.KeyboardLayouts";
-	QDBusConnection session = QDBusConnection::sessionBus();
-	session.connect(service, path, interface, "currentLayoutChanged", this, SLOT(layoutChanged()));
-	session.connect(service, path, interface, "layoutListChanged", this, SLOT(layoutListChanged()));
-	connect(&m_eventListener, SIGNAL(keyEvent(int,bool)), this, SLOT(keyEventReceived(int,bool)));
-	m_eventListener.start();
-}
-
-QString KeyboardWidget::textForScanCode(int scanCode) {
-	if (m_currentLayout < 0) return QString();
-	int keySymCount = 0;
-	KeySym *keySym = XGetKeyboardMapping(QX11Info::display(), scanCode, 1, &keySymCount);
-	int normalIndex = m_currentLayout * 2;
-	int shiftedIndex = normalIndex + 1;
-	KeySym normal = keySym[normalIndex];
-	KeySym shifted = keySym[shiftedIndex];
-	QString text = QChar((uint)keysym2ucs(m_shiftState ? shifted : normal));
-	if (m_capsState) {
-		if (m_shiftState) {
-			text = text.toLower();
-		} else {
-			text = text.toUpper();
-		}
-	}
-	XFree((char*)keySym);
-	return text;
+	connect(&m_x11Support, SIGNAL(error(const char*)), this, SLOT(eventListenerError(const char*)));
+	connect(&m_x11Support, SIGNAL(keyEvent(int,bool)), this, SLOT(keyEventReceived(int,bool)));
+	connect(&m_x11Support, SIGNAL(keyboardLayoutChanged()), this, SLOT(layoutChanged()));
+	connect(&m_x11Support, SIGNAL(indicatorsStateChanged()), this, SLOT(indicatorsStateChanged()));
+	m_x11Support.start();
 }
 
 void KeyboardWidget::keyEventReceived(int scanCode, bool pressed) {
-	if (pressed) {
-		m_pressedButtons.insert(scanCode);
-	} else {
-		m_pressedButtons.remove(scanCode);
-	}
 	auto it = m_buttons.find(scanCode);
 	if (it != m_buttons.end()) {
 		(*it)->setProperty("checked", QVariant(pressed));
 	}
-	unsigned int n = 0;
-	XkbGetIndicatorState(QX11Info::display(), XkbUseCoreKbd, &n);
-	m_capsState = (n & 0x01) != 0;
-	m_shiftState = m_pressedButtons.contains(50) || m_pressedButtons.contains(62);
 	updateLayoutLabels();
 }
 
 void KeyboardWidget::buttonPressed(int scanCode) {
 	if (scanCode >= 0) {
-		m_pressedButtons.insert(scanCode);
 		auto it = m_buttons.find(scanCode);
 		if (it != m_buttons.end()) {
 			(*it)->setProperty("checked", true);
 		}
-		XTestFakeKeyEvent(QX11Info::display(), scanCode, true, 0);
+		m_x11Support.fakeKeyEvent(scanCode, true);
 	}
 }
 
 void KeyboardWidget::buttonReleased(int scanCode) {
 	if (scanCode >= 0) {
-		m_pressedButtons.insert(scanCode);
 		auto it = m_buttons.find(scanCode);
 		if (it != m_buttons.end()) {
 			(*it)->setProperty("checked", false);
 		}
-		XTestFakeKeyEvent(QX11Info::display(), scanCode, false, 0);
+		m_x11Support.fakeKeyEvent(scanCode, false);
 	} else if (scanCode == -2) {
 		hide();
 	} else if (scanCode == -3) {
-		int nextLayout = (m_currentLayout + 1) % m_layouts.size();
-		QDBusInterface iface("org.kde.keyboard", "/Layouts", "org.kde.KeyboardLayouts", QDBusConnection::sessionBus());
-		iface.call("setLayout", m_layouts[nextLayout]);
+		m_x11Support.switchKeyboardLayout();
 	}
 }
 
 void KeyboardWidget::mousePressEvent(QMouseEvent *event) {
 	m_clickPos = event->globalPos();
-	if ((event->button() == Qt::LeftButton) && !m_dragging) {
-		m_dragging = true;
+	if ((event->button() == Qt::LeftButton) && !m_dragging && !m_resizing) {
+		QPoint invertedPos = QPoint(width(), height()) - event->pos();
+		if ((invertedPos.x() < 10) || (invertedPos.y() < 10)) {
+			m_resizing = true;
+			m_imaginarySize = size();
+		} else {
+			m_dragging = true;
+		}
 	}
 }
 
 void KeyboardWidget::mouseReleaseEvent(QMouseEvent *event) {
 	Q_UNUSED(event);
 	m_dragging = false;
+	m_resizing = false;
 	m_widgetSizes.insert(QApplication::desktop()->size(), QRect(x(), y(), width(), height()));
 }
 
 void KeyboardWidget::mouseMoveEvent(QMouseEvent *event) {
+	QPoint delta = event->globalPos() - m_clickPos;
+	m_clickPos = event->globalPos();
 	if (m_dragging) {
-		QPoint delta = event->globalPos() - m_clickPos;
-		m_clickPos = event->globalPos();
 		move(x() + delta.x(), y() + delta.y());
+	} else if (m_resizing) {
+		m_imaginarySize.setWidth(m_imaginarySize.width() + delta.x());
+		m_imaginarySize.setHeight(m_imaginarySize.height() + delta.y());
+		resize(m_imaginarySize.width(), m_imaginarySize.height());
 	}
+}
+
+void KeyboardWidget::resizeEvent(QResizeEvent *event) {
+	QWidget::resizeEvent(event);
+	if (m_quickWidget.rootObject() == nullptr) return;
+	QSize baseSize(m_quickWidget.rootObject()->width(), m_quickWidget.rootObject()->height());
+	float scaleX = (float)m_quickWidget.width() / baseSize.width();
+	float scaleY = (float)m_quickWidget.height() / baseSize.height();
+	float scale = qMin(scaleX, scaleY);
+	m_quickWidget.rootObject()->setTransformOriginPoint(QPointF(0, 0));
+	m_quickWidget.rootObject()->setScale(scale);
 }
 
 void KeyboardWidget::desktopResized() {
@@ -237,16 +210,16 @@ void KeyboardWidget::desktopResized() {
 	if (it != m_widgetSizes.end()) {
 		move(it->x(), it->y());
 		resize(it->width(), it->height());
-		if ((x() + width()) > desktopSize.width()) {
-			move(desktopSize.width() - width(), y());
-		} else if (x() < 0) {
-			move(0, y());
-		}
-		if ((y() + height()) > desktopSize.height()) {
-			move(x(), desktopSize.height() - height());
-		} else if (y() < 0) {
-			move(x(), 0);
-		}
+	}
+	if ((x() + width()) > desktopSize.width()) {
+		move(desktopSize.width() - width(), y());
+	} else if (x() < 0) {
+		move(0, y());
+	}
+	if ((y() + height()) > desktopSize.height()) {
+		move(x(), desktopSize.height() - height());
+	} else if (y() < 0) {
+		move(x(), 0);
 	}
 }
 
@@ -298,16 +271,13 @@ void KeyboardWidget::hideHideButton() {
 void KeyboardWidget::setTransparentBackground(bool transparent, bool blur) {
 	m_transparentBackground = transparent;
 	m_blurBackground = blur;
-	Atom net_wm_blur_region = XInternAtom(QX11Info::display(), "_KDE_NET_WM_BLUR_BEHIND_REGION", False);
-	if (transparent && blur) {
-		XChangeProperty(QX11Info::display(), winId(), net_wm_blur_region, XA_CARDINAL, 32, PropModeReplace, 0, 0);
-	} else {
-		XDeleteProperty(QX11Info::display(), winId(), net_wm_blur_region);
-	}
+	m_x11Support.enableBlurForWidgetBackground(this, transparent && blur);
 	m_quickWidget.setClearColor(transparent ? Qt::transparent : Qt::white);
 	repaint();
 }
 
 static bool operator<(const QSize& first, const QSize& second) {
-	return (first.width() * first.height()) < (second.width() * second.height());
+	int hash1 = (first.width() << 16) + first.height();
+	int hash2 = (second.width() << 16) + second.height();
+	return hash1 < hash2;
 }
