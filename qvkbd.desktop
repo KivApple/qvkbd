@@ -1,0 +1,19 @@
+[Desktop Entry]
+Categories=Utility;Accessibility;
+Comment[ru_RU]=Virtual keyboard
+Comment=Virtual keyboard
+Exec=qvkbd
+GenericName[ru_RU]=
+GenericName=
+MimeType=
+Name[ru_RU]=QVKbd
+Name=QVKbd
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-DBUS-ServiceName=
+X-DBUS-StartupType=
+X-KDE-SubstituteUID=false
+X-KDE-Username=
