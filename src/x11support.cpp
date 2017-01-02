@@ -87,6 +87,10 @@ void X11Support::run() {
 			XkbStateRec xkbState;
 			XkbGetState(m_privateData->controlDisplay, XkbUseCoreKbd, &xkbState);
 			m_privateData->cur_layout = xkbState.group;
+			unsigned int n;
+			XkbGetIndicatorState(m_privateData->controlDisplay, XkbUseCoreKbd, &n);
+			m_privateData->caps_lock_state = n & 1;
+			m_privateData->num_lock_state = n & 2;
 #define XKB_EVT_MASK (XkbStateNotifyMask | XkbIndicatorStateNotifyMask)
 			XkbSelectEvents(m_privateData->controlDisplay, XkbUseCoreKbd, XKB_EVT_MASK, XKB_EVT_MASK);
 		}
@@ -121,6 +125,7 @@ void X11Support::run() {
 					} else {
 						int controlFd = XConnectionNumber(m_privateData->controlDisplay);
 						int dataFd = XConnectionNumber(m_privateData->dataDisplay);
+						emit initialized();
 						while (m_running) {
 							fd_set fds;
 							FD_ZERO(&fds);

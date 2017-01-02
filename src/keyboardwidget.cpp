@@ -36,10 +36,6 @@ KeyboardWidget::KeyboardWidget(QWidget *parent) : QWidget(parent), m_quickWidget
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->addWidget(&m_quickWidget);
 	installEventHandlers();
-	layoutChanged();
-	loadKeyLayout("qrc:/layouts/standard.qml");
-	m_quickWidget.setStyleSheet("KeyItem { color: yellow; }");
-	connect(QApplication::desktop(), SIGNAL(resized(int)), this, SLOT(desktopResized()));
 }
 
 KeyboardWidget::~KeyboardWidget() {
@@ -121,11 +117,18 @@ void KeyboardWidget::eventListenerError(const char *message) {
 	QMessageBox::critical(this, windowTitle(), message, QMessageBox::Ok, QMessageBox::Ok);
 }
 
+void KeyboardWidget::x11SupportInitialized() {
+	layoutChanged();
+	loadKeyLayout("qrc:/layouts/standard.qml");
+}
+
 void KeyboardWidget::installEventHandlers() {
 	connect(&m_x11Support, SIGNAL(error(const char*)), this, SLOT(eventListenerError(const char*)));
 	connect(&m_x11Support, SIGNAL(keyEvent(int,bool)), this, SLOT(keyEventReceived(int,bool)));
 	connect(&m_x11Support, SIGNAL(keyboardLayoutChanged()), this, SLOT(layoutChanged()));
 	connect(&m_x11Support, SIGNAL(indicatorsStateChanged()), this, SLOT(indicatorsStateChanged()));
+	connect(&m_x11Support, SIGNAL(initialized()), this, SLOT(x11SupportInitialized()));
+	connect(QApplication::desktop(), SIGNAL(resized(int)), this, SLOT(desktopResized()));
 	m_x11Support.start();
 }
 

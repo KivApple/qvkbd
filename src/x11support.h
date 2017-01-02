@@ -20,6 +20,7 @@
 #define X11SUPPORT_H
 
 #include <QThread>
+#include <QSemaphore>
 
 struct X11SupportPrivateData;
 
@@ -43,6 +44,7 @@ signals:
 	void keyEvent(int scanCode, bool pressed);
 	void keyboardLayoutChanged();
 	void indicatorsStateChanged();
+	void initialized();
 
 protected:
 	void run() override;
@@ -50,6 +52,7 @@ protected:
 private:
 	volatile bool m_running;
 	X11SupportPrivateData *m_privateData;
+
 	void handleCapturedEvent();
 
 };

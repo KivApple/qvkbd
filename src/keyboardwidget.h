@@ -49,6 +49,7 @@ private slots:
 	void desktopResized();
 	void eventListenerError(const char *message);
 	void indicatorsStateChanged();
+	void x11SupportInitialized();
 
 protected:
 	void mousePressEvent(QMouseEvent *event);
