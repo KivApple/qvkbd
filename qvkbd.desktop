@@ -8,6 +8,7 @@ GenericName=
 MimeType=
 Name[ru_RU]=QVKbd
 Name=QVKbd
+Icon=qvkbd
 Path=
 StartupNotify=true
 Terminal=false
