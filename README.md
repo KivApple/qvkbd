@@ -2,6 +2,8 @@
 
 A virtual keyboard written in C++ and QML.
 
+![Screenshot](misc/screenshot.png)
+
 ## Dependecies
 
 You are need X11, Qt and QML packages installed.
