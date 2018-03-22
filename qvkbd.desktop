@@ -1,6 +1,7 @@
 [Desktop Entry]
 Categories=Utility;Accessibility;
 Comment[ru_RU]=Virtual keyboard
+Comment[de_DE]=Virtuelle Tastatur
 Comment=Virtual keyboard
 Exec=qvkbd
 GenericName[ru_RU]=
