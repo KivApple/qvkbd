@@ -52,3 +52,21 @@ DBUS_ADAPTORS += \
 
 DBUS_INTERFACES += \
 	src/xyz.etse.QVKbd.xml
+
+isEmpty( PREFIX ) {
+  PREFIX = /usr
+}
+
+# Install qvkbd binary
+target.path = $$PREFIX$$/bin
+INSTALLS += target
+
+# Install desktop file
+desktopfile.path  = $$PREFIX$$/share/applications/
+desktopfile.files = qvkbd.desktop
+INSTALLS += desktopfile
+
+# Install svg
+svgfile.path  = $$PREFIX$$/share/icons/hicolor/scalable/qvkbd.svg
+svgfile.files = icons/keyboard.svg
+INSTALLS += svgfile
