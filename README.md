@@ -15,9 +15,7 @@ You need X11, Qt and QML packages installed.
 
 ## Installing
 
-    install -D -m 0755 qvkbd "$pkgdir/usr/bin/qvkbd"
-    install -D -m 0755 qvkbd.desktop "$pkgdir/usr/share/applications/qvkbd.desktop"
-    install -D -m 0644 icons/keyboard.svg "$pkgdir/usr/share/icons/hicolor/scalable/qvkbd.svg"
+    sudo make install
 
 ## Usage
 
