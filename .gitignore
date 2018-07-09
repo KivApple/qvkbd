@@ -1,3 +1,7 @@
 build
 *.user
 .directory
+*.stash
+*.o
+mov_*.cpp
+Makefile
