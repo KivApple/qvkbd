@@ -23,7 +23,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/unistd.h>
+#include <unistd.h>
 #include <X11/Xlibint.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/XTest.h>
