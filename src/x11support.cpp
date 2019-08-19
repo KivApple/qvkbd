@@ -57,6 +57,7 @@ struct X11SupportPrivateData {
 
 X11Support::X11Support() {
 	m_privateData = new X11SupportPrivateData;
+	m_running = false;
 }
 
 X11Support::~X11Support() {
